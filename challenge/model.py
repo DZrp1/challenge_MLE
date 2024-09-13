@@ -29,6 +29,16 @@ class DelayModel:
             pd.DataFrame: features.
         """
 
+        # Value verification
+        valid_tipovuelo = ["N", "I"]
+        valid_mes = list(range(1, 13))  
+
+        if not data["TIPOVUELO"].isin(valid_tipovuelo).all():
+            raise ValueError("Invalid value for TIPOVUELO")
+
+        if not data["MES"].isin(valid_mes).all():
+            raise ValueError("Invalid value for MES")
+
         # Function to calculate the difference in minutes between the departure time and arrival time
         def get_min_diff(row):
             try:
@@ -85,7 +95,7 @@ class DelayModel:
             features (pd.DataFrame): preprocessed data.
             target (pd.DataFrame): target.
         """
-        # Split the data into training and test sets
+        # Split the data into training and test sets and calculate class balance
         x_train, x_test, y_train, y_test = train_test_split(features, target, test_size=0.33, random_state=42)
 
         self._x_test = x_test
@@ -110,7 +120,6 @@ class DelayModel:
         Returns:
             (List[int]): predicted targets.
         """
-        # Make predictions
         predictions = self._model.predict(features)
         return predictions.tolist()
 
