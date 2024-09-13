@@ -28,17 +28,6 @@ class DelayModel:
             or
             pd.DataFrame: features.
         """
-
-        # Value verification
-        valid_tipovuelo = ["N", "I"]
-        valid_mes = list(range(1, 13))  
-
-        if not data["TIPOVUELO"].isin(valid_tipovuelo).all():
-            raise ValueError("Invalid value for TIPOVUELO")
-
-        if not data["MES"].isin(valid_mes).all():
-            raise ValueError("Invalid value for MES")
-
         # Function to calculate the difference in minutes between the departure time and arrival time
         def get_min_diff(row):
             try:
@@ -74,6 +63,10 @@ class DelayModel:
             "OPERA_Sky Airline",
             "OPERA_Copa Air"
         ]
+
+        for feature in top_10_features:
+            if feature not in features.columns:
+                features[feature] = 0
 
         features = features[top_10_features]
 
