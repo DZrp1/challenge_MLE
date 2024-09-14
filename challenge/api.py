@@ -13,14 +13,12 @@ import pandas as pd
 
 app = FastAPI()
 
-model_data = load("C:/Personales/Programas_Python/challenge_MLE/challenge/trained_model_with_metadata.joblib")
+model_data = load("challenge/trained_model_with_metadata.joblib") # C:/Personales/Programas_Python/challenge_MLE/
 model = model_data['model']
 preprocess = model_data['preprocessor'] 
 airlines = model_data['airlines']
 types = model_data['types']
 months = model_data['months']
-
-print(types)
 
 class Flight(BaseModel):
     OPERA: str
