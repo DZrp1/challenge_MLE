@@ -1,37 +1,26 @@
 import sys
 import os
 
-if __name__ == "__main__":
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)
-    sys.path.insert(0, parent_dir)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 
-import fastapi
-from fastapi import HTTPException
+from fastapi import HTTPException, FastAPI
 from pydantic import BaseModel
 from typing import List
+from joblib import load
 import pandas as pd
-from challenge.model import DelayModel
 
-app = fastapi.FastAPI()
+app = FastAPI()
 
-model = DelayModel()
+model_data = load("C:/Personales/Programas_Python/challenge_MLE/challenge/trained_model_with_metadata.joblib")
+model = model_data['model']
+preprocess = model_data['preprocessor'] 
+airlines = model_data['airlines']
+types = model_data['types']
+months = model_data['months']
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH = os.path.join(BASE_DIR, '../data/data.csv')
-
-try:
-    data = pd.read_csv(DATA_PATH)
-
-    airlines = data['OPERA'].unique().tolist()  
-    types = data['TIPOVUELO'].unique().tolist()  
-    months = data['MES'].unique().tolist()
-
-    features, target = model.preprocess(data, target_column="delay")
-    model.fit(features, target)
-
-except Exception as e:
-    raise RuntimeError(f"Error al entrenar el modelo: {str(e)}")
+print(types)
 
 class Flight(BaseModel):
     OPERA: str
@@ -43,35 +32,25 @@ class PredictRequest(BaseModel):
 
 @app.get("/health", status_code=200)
 async def get_health() -> dict:
-    return {
-        "status": "OK"
-    }
+    return {"status": "OK"}
+
 
 @app.post("/predict", status_code=200)
 async def post_predict(request: PredictRequest) -> dict:
+    # Validate the received data
     for flight in request.flights:
         if flight.OPERA not in airlines:
-            raise HTTPException(status_code=400, detail=f"Aerolínea '{flight.OPERA}' no es válida. Aerolíneas válidas: {', '.join(airlines)}.")
+            raise HTTPException(status_code=400, detail=f"Airline '{flight.OPERA}' is not valid. Valid airlines: {', '.join(airlines)}.")
         if flight.TIPOVUELO not in types:
-            raise HTTPException(status_code=400, detail=f"Tipo de vuelo '{flight.TIPOVUELO}' no es válido. Debe ser 'N' (Nacional) o 'I' (Internacional).")
+            raise HTTPException(status_code=400, detail=f"Flight type '{flight.TIPOVUELO}' is not valid.")
         if flight.MES not in months:
-            raise HTTPException(status_code=400, detail=f"El mes '{flight.MES}' no es válido. Debe estar entre 1 y 12.")
+            raise HTTPException(status_code=400, detail=f"The month '{flight.MES}' is not valid. It must be between 1 and 12.")
 
-    try:
-        # Convertir los datos a un DataFrame
-        df = pd.DataFrame([flight.dict() for flight in request.flights])
-        if df.empty:
-            raise HTTPException(status_code=400, detail="No se recibieron datos válidos")
-        
-        # Preprocesar los datos (donde las aerolíneas no relevantes se les asigna 0)
-        try:
-            features = model.preprocess(df)
-        except ValueError as ve:
-            raise HTTPException(status_code=400, detail=str(ve))
-        
-        # Realizar la predicción
-        predictions = model.predict(features)
-        return {"predict": predictions}
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error en la predicción: {str(e)}")
+    df = pd.DataFrame([flight.dict() for flight in request.flights])
+    
+    # Apply the saved preprocessing
+    features = preprocess(df)
+    predictions = model.predict(features)
+    predictions_list = predictions.tolist()
+    
+    return {"predict": predictions_list}
