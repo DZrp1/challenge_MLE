@@ -22,15 +22,14 @@ RUN make model-test && make api-test
 FROM python:3.11-slim
 WORKDIR /app
 
-# Instalar dependencias mínimas necesarias para producción
 RUN apt-get update && apt-get install -y gcc g++ make libssl-dev
 
-# Copiar solo los archivos necesarios desde la fase builder
+# Copy only the necessary files from the builder phase
 COPY --from=builder /app/challenge/api.py /app/challenge/
 COPY --from=builder /app/challenge/model.py /app/challenge/
 COPY --from=builder /app/challenge/trained_model_with_metadata.joblib /app/challenge/
 
-# Instalar solo las dependencias de producción
+# Install only the production dependencies
 COPY requirements-api.txt ./
 RUN pip install --no-cache-dir -r requirements-api.txt
 
