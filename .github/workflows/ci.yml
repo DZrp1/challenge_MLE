@@ -29,6 +29,3 @@ jobs:
       run: |
         make model-test  
         make api-test    
-
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
