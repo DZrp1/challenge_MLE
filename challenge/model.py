@@ -28,7 +28,6 @@ class DelayModel:
             or
             pd.DataFrame: features.
         """
-
         # Function to calculate the difference in minutes between the departure time and arrival time
         def get_min_diff(row):
             try:
@@ -65,6 +64,10 @@ class DelayModel:
             "OPERA_Copa Air"
         ]
 
+        for feature in top_10_features:
+            if feature not in features.columns:
+                features[feature] = 0
+
         features = features[top_10_features]
 
         if target_column:
@@ -85,7 +88,7 @@ class DelayModel:
             features (pd.DataFrame): preprocessed data.
             target (pd.DataFrame): target.
         """
-        # Split the data into training and test sets
+        # Split the data into training and test sets and calculate class balance
         x_train, x_test, y_train, y_test = train_test_split(features, target, test_size=0.33, random_state=42)
 
         self._x_test = x_test
@@ -110,7 +113,6 @@ class DelayModel:
         Returns:
             (List[int]): predicted targets.
         """
-        # Make predictions
         predictions = self._model.predict(features)
         return predictions.tolist()
 
